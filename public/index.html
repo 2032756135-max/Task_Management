@@ -1,0 +1,9 @@
+<!doctype html><html lang="zh-CN"><head><meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1.0"><title>任务管理</title><link rel="stylesheet" href="styles.css"></head><body>
+<header><h1>任务管理工作台</h1><div id="authBar"></div></header>
+<main>
+<section class="card" id="loginCard"><h2>登录/注册</h2><div class="row"><input id="username" placeholder="用户名"><input id="password" type="password" placeholder="密码"><button onclick="login()">登录</button><button onclick="register()">注册</button></div><p>默认管理员：admin / admin123</p></section>
+<section class="card hidden" id="taskCard"><h2>新增任务</h2><form id="taskForm" class="row"><input name="title" placeholder="任务标题" required><input name="category" placeholder="分类"><select name="priority"><option value="high">高</option><option value="medium">中</option><option value="low">低</option></select><input name="dueDate" type="date"><input name="ownerEmail" type="email" placeholder="提醒邮箱"><input name="notes" placeholder="备注"><button type="submit">保存</button></form></section>
+<section class="card hidden" id="boardCard"><h2>看板（拖拽任务）</h2><div class="kanban"><div class="col" data-status="todo"><h3>待办</h3><div class="list" id="todo"></div></div><div class="col" data-status="doing"><h3>进行中</h3><div class="list" id="doing"></div></div><div class="col" data-status="done"><h3>已完成</h3><div class="list" id="done"></div></div></div></section>
+<section class="card hidden" id="reportCard"><h2>每周总结报表</h2><button onclick="loadReport()">刷新报表</button><pre id="report"></pre></section>
+<section class="card hidden" id="excelCard"><h2>Excel 导入导出</h2><button onclick="exportExcel()">导出 Excel</button><input type="file" id="fileInput" accept=".xlsx,.xls"><button onclick="importExcel()">导入 Excel</button></section>
+</main><script src="app.js"></script></body></html>
