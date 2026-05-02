@@ -23,14 +23,18 @@ button.primary { background: var(--primary); border-color: var(--primary); color
 .actions { display: flex; gap: 8px; align-items: center; flex-wrap: wrap; }
 .hidden { display: none !important; }
 .board-title { display: flex; justify-content: space-between; align-items: center; gap: 10px; margin-bottom: 10px; }
+.board-stats { display: flex; flex-wrap: wrap; gap: 8px; margin-bottom: 10px; }
+.chip { background: #eff6ff; color: #1e3a8a; border: 1px solid #bfdbfe; border-radius: 999px; padding: 4px 10px; font-size: .82rem; }
 .kanban { display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px; }
 .col { background: #f8fafc; border: 1px solid var(--line); border-radius: 10px; padding: 10px; min-height: 280px; }
+.list { min-height: 160px; }
 .task { background: #fff; border: 1px solid var(--line); border-left: 4px solid #94a3b8; border-radius: 8px; padding: 10px; margin-bottom: 8px; cursor: grab; }
 .task.high { border-left-color: #dc2626; }
 .task.medium { border-left-color: #f59e0b; }
 .task.low { border-left-color: #10b981; }
 .meta { color: var(--muted); font-size: .85rem; margin: 4px 0; }
 .task .actions { margin-top: 8px; }
+.empty { text-align: center; color: var(--muted); font-size: .9rem; padding: 16px 8px; border: 1px dashed #cbd5e1; border-radius: 8px; background: #fff; }
 #report { background: #0f172a; color: #e2e8f0; padding: 12px; border-radius: 8px; overflow: auto; }
 .toast { position: fixed; right: 14px; bottom: 14px; background: #0f172a; color: #fff; padding: 10px 12px; border-radius: 8px; }
 @media (max-width: 900px) {
