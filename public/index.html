@@ -16,9 +16,11 @@
   </header>
 
   <main>
-    <section class="card" id="loginCard">
+    <section class="card login-card" id="loginCard">
       <h2>欢迎登录</h2>
       <p class="muted">默认管理员：admin / admin123</p>
+      <label class="muted">登录背景图 URL（可选）</label>
+      <input id="bgConfig" placeholder="https://example.com/bg.jpg" />
       <form id="authForm" class="form-grid">
         <input id="username" placeholder="用户名（至少3位）" minlength="3" required />
         <input id="password" type="password" placeholder="密码（至少6位）" minlength="6" required />
@@ -30,7 +32,13 @@
     </section>
 
     <section class="card hidden" id="taskCard">
-      <h2>新增任务</h2>
+      <h2>一句话创建任务</h2>
+      <form id="quickTaskForm" class="form-grid">
+        <input name="quickText" placeholder="例：明天14:30前完成周报 #工作 p1 @a@b.com remind=90" required />
+        <button class="primary" type="submit">快速创建</button>
+      </form>
+
+      <h3>高级创建</h3>
       <form id="taskForm" class="form-grid">
         <input name="title" placeholder="任务标题" required />
         <input name="category" placeholder="分类" />
@@ -39,7 +47,8 @@
           <option value="medium" selected>中优先级</option>
           <option value="low">低优先级</option>
         </select>
-        <input name="dueDate" type="date" />
+        <input name="dueAt" type="datetime-local" />
+        <input name="remindBeforeMinutes" type="number" min="0" placeholder="提前提醒(分钟)" />
         <input name="ownerEmail" type="email" placeholder="提醒邮箱" />
         <input name="notes" placeholder="备注" />
         <button class="primary" type="submit">保存任务</button>
@@ -48,8 +57,13 @@
 
     <section class="card hidden" id="boardCard">
       <div class="board-title">
-        <h2>任务看板（拖拽更新状态）</h2>
+        <h2>任务看板（点击切换状态 + 批量操作）</h2>
         <input id="searchInput" placeholder="搜索标题 / 分类..." />
+      </div>
+      <div class="actions">
+        <button onclick="bulkUpdateStatus('doing')">批量设为进行中</button>
+        <button onclick="bulkUpdateStatus('done')">批量设为已完成</button>
+        <button onclick="bulkUpdateStatus('todo')">批量设为待办</button>
       </div>
       <div class="board-stats" id="boardStats"></div>
       <div class="kanban">
@@ -63,15 +77,6 @@
       <h2>每周总结报表</h2>
       <button onclick="loadReport()">刷新报表</button>
       <pre id="report"></pre>
-    </section>
-
-    <section class="card hidden" id="excelCard">
-      <h2>Excel 导入导出</h2>
-      <div class="actions">
-        <button onclick="exportExcel()">导出 Excel</button>
-        <input type="file" id="fileInput" accept=".xlsx,.xls" />
-        <button onclick="importExcel()">导入 Excel</button>
-      </div>
     </section>
   </main>
 

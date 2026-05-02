@@ -39,13 +39,13 @@ function auth(req, res, next) {
 }
 
 function computeWarning(task) {
-  if (!task.dueDate || task.status === 'done') return null;
-  const due = new Date(`${task.dueDate}T23:59:59`);
+  if (!task.dueAt || task.status === 'done') return null;
+  const due = new Date(task.dueAt);
   const ms = due - new Date();
-  const hours = Math.floor(ms / 36e5);
   if (ms < 0) return '已逾期';
-  if (hours <= 24) return '24小时内到期';
-  if (hours <= 72) return '3天内到期';
+  const mins = Math.floor(ms / 60000);
+  if (mins <= 60) return '1小时内到期';
+  if (mins <= 180) return '3小时内到期';
   return null;
 }
 
@@ -90,10 +90,32 @@ app.get('/api/tasks', auth, (req, res) => {
 });
 
 app.post('/api/tasks', auth, (req, res) => {
-  const { title, category, priority, dueDate, notes } = req.body;
+  const { title, category, priority, dueAt, notes, remindBeforeMinutes } = req.body;
   if (!title || String(title).trim().length < 2) return res.status(400).json({ message: '任务标题至少2个字符' });
-  const task = { id: Date.now().toString(), userId: req.user.id, title, category: category || '未分类', priority: priority || 'medium', dueDate: dueDate || '', notes: notes || '', ownerEmail: req.body.ownerEmail || '', status: 'todo', lastReminderAt: '', createdAt: new Date().toISOString() };
+  const task = { id: Date.now().toString(), userId: req.user.id, title, category: category || '未分类', priority: priority || 'medium', dueAt: dueAt || '', notes: notes || '', ownerEmail: req.body.ownerEmail || '', remindBeforeMinutes: Number(remindBeforeMinutes || 60), status: 'todo', lastReminderAt: '', autoRemindedAt: '', createdAt: new Date().toISOString() };
   req.db.tasks.push(task); writeDb(req.db); res.status(201).json(task);
+});
+
+
+app.post('/api/tasks/quick', auth, (req, res) => {
+  const { title, priority, remindBeforeMinutes } = req.body;
+  if (!title || String(title).trim().length < 2) return res.status(400).json({ message: '任务标题至少2个字符' });
+  const task = { id: Date.now().toString(), userId: req.user.id, title: String(title).trim(), category: '快速任务', priority: priority || 'medium', dueAt: '', notes: '', ownerEmail: '', remindBeforeMinutes: Number(remindBeforeMinutes || 60), status: 'todo', lastReminderAt: '', autoRemindedAt: '', createdAt: new Date().toISOString() };
+  req.db.tasks.push(task);
+  writeDb(req.db);
+  res.status(201).json(task);
+});
+
+app.put('/api/tasks/bulk-status', auth, (req, res) => {
+  const { ids, status } = req.body;
+  if (!Array.isArray(ids) || !ids.length) return res.status(400).json({ message: '缺少任务ID' });
+  let updated = 0;
+  req.db.tasks = req.db.tasks.map((t) => {
+    if (ids.includes(t.id) && (t.userId === req.user.id || req.user.role === 'admin')) { updated += 1; return { ...t, status }; }
+    return t;
+  });
+  writeDb(req.db);
+  res.json({ message: `已更新 ${updated} 条任务` });
 });
 
 app.put('/api/tasks/:id', auth, (req, res) => {
@@ -137,7 +159,7 @@ app.post('/api/tasks/import', auth, (req, res) => {
   if (!base64) return res.status(400).json({ message: '缺少文件内容' });
   const wb = XLSX.read(Buffer.from(base64, 'base64'), { type: 'buffer' });
   const rows = XLSX.utils.sheet_to_json(wb.Sheets[wb.SheetNames[0]]);
-  rows.forEach((r) => req.db.tasks.push({ id: `${Date.now()}${Math.random()}`, userId: req.user.id, title: r.title || r.标题 || '未命名任务', category: r.category || r.分类 || '未分类', priority: r.priority || 'medium', dueDate: r.dueDate || '', notes: r.notes || '', ownerEmail: r.ownerEmail || '', status: r.status || 'todo', createdAt: new Date().toISOString(), lastReminderAt: '' }));
+  rows.forEach((r) => req.db.tasks.push({ id: `${Date.now()}${Math.random()}`, userId: req.user.id, title: r.title || r.标题 || '未命名任务', category: r.category || r.分类 || '未分类', priority: r.priority || 'medium', dueAt: r.dueAt || r.dueDate || '', notes: r.notes || '', ownerEmail: r.ownerEmail || '', remindBeforeMinutes: Number(r.remindBeforeMinutes || 60), status: r.status || 'todo', createdAt: new Date().toISOString(), lastReminderAt: '', autoRemindedAt: '' }));
   writeDb(req.db); res.json({ message: `成功导入 ${rows.length} 条任务` });
 });
 
@@ -147,8 +169,30 @@ app.post('/api/send-reminder/:id', auth, async (req, res) => {
   const transporter = getTransporter();
   if (!transporter) return res.status(400).json({ message: '未配置SMTP' });
   if (!task.ownerEmail) return res.status(400).json({ message: '该任务未设置提醒邮箱' });
-  await transporter.sendMail({ from: process.env.SMTP_USER, to: task.ownerEmail, subject: `任务提醒：${task.title}`, text: `任务状态：${task.status}，截止：${task.dueDate || '未设置'}，备注：${task.notes || '无'}` });
+  await transporter.sendMail({ from: process.env.SMTP_USER, to: task.ownerEmail, subject: `任务提醒：${task.title}`, text: `任务状态：${task.status}，截止：${task.dueAt || '未设置'}，备注：${task.notes || '无'}` });
   task.lastReminderAt = new Date().toISOString(); writeDb(req.db); res.json({ message: '邮件提醒已发送' });
 });
+
+
+setInterval(async () => {
+  const db = readDb();
+  const transporter = getTransporter();
+  if (!transporter) return;
+  const now = Date.now();
+  let changed = false;
+  for (const task of db.tasks) {
+    if (!task.ownerEmail || !task.dueAt || task.status === 'done') continue;
+    const dueTs = new Date(task.dueAt).getTime();
+    const remindTs = dueTs - Number(task.remindBeforeMinutes || 60) * 60000;
+    if (now >= remindTs && !task.autoRemindedAt) {
+      try {
+        await transporter.sendMail({ from: process.env.SMTP_USER, to: task.ownerEmail, subject: `任务预警：${task.title}`, text: `任务将于 ${task.dueAt} 到期，请及时处理。` });
+        task.autoRemindedAt = new Date().toISOString();
+        changed = true;
+      } catch (e) {}
+    }
+  }
+  if (changed) writeDb(db);
+}, 60000);
 
 app.listen(PORT, () => { ensureDb(); console.log(`http://localhost:${PORT}`); });
