@@ -17,7 +17,11 @@ async function request(url, options = {}) {
   const res = await fetch(url, options);
   const isJson = res.headers.get('content-type')?.includes('application/json');
   const data = isJson ? await res.json() : null;
-  if (!res.ok) throw new Error(data?.message || `请求失败(${res.status})`);
+  if (!res.ok) {
+    const error = new Error(data?.message || `请求失败(${res.status})`);
+    error.status = res.status;
+    throw error;
+  }
   return data;
 }
 
@@ -107,7 +111,7 @@ function renderTasks() {
   const q = $('searchInput').value.trim().toLowerCase();
   const columns = { todo: [], doing: [], done: [] };
   const filtered = allTasks
-    .filter((t) => !q || t.title.toLowerCase().includes(q) || (t.category || '').toLowerCase().includes(q))
+    .filter((t) => !q || t.title.toLowerCase().includes(q) || (t.category || '').toLowerCase().includes(q));
   filtered.forEach((t) => {
     const key = columns[t.status] ? t.status : 'todo';
     columns[key].push(taskCard(t));
@@ -123,7 +127,11 @@ async function loadTasks() {
     allTasks = await request('/api/tasks', { headers: headers() });
     renderTasks();
   } catch (e) {
-    if (e.message.includes('401')) setLoggedIn(false);
+    if (e.status === 401) {
+      token = '';
+      localStorage.removeItem('token');
+      setLoggedIn(false);
+    }
     showToast(e.message);
   }
 }
