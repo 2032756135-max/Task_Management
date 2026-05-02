@@ -3,6 +3,8 @@ let allTasks = [];
 
 const headers = () => ({ 'Content-Type': 'application/json', Authorization: `Bearer ${token}` });
 const $ = (id) => document.getElementById(id);
+const ESCAPE_MAP = { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' };
+const escapeHtml = (v) => String(v ?? '').replace(/[&<>"']/g, (s) => ESCAPE_MAP[s]);
 
 function showToast(msg) {
   const toast = $('toast');
@@ -74,10 +76,10 @@ $('taskForm').addEventListener('submit', async (e) => {
 
 function taskCard(t) {
   return `<div class='task ${t.priority}' draggable='true' ondragstart="drag(event)" id='t-${t.id}'>
-    <b>${t.title}</b>
-    <div class='meta'>${t.category} | 优先级: ${t.priority}</div>
-    <div class='meta'>截止: ${t.dueDate || '无'} ${t.warning ? `| ⚠️${t.warning}` : ''}</div>
-    <div class='meta'>备注: ${t.notes || '无'}</div>
+    <b>${escapeHtml(t.title)}</b>
+    <div class='meta'>${escapeHtml(t.category)} | 优先级: ${escapeHtml(t.priority)}</div>
+    <div class='meta'>截止: ${escapeHtml(t.dueDate || '无')} ${t.warning ? `| ⚠️${escapeHtml(t.warning)}` : ''}</div>
+    <div class='meta'>备注: ${escapeHtml(t.notes || '无')}</div>
     <div class='actions'>
       <button onclick="sendReminder('${t.id}')">提醒</button>
       <button onclick="quickEdit('${t.id}')">编辑</button>
@@ -86,12 +88,34 @@ function taskCard(t) {
   </div>`;
 }
 
+function renderBoardStats(tasks) {
+  const total = tasks.length;
+  const done = tasks.filter((t) => t.status === 'done').length;
+  const doing = tasks.filter((t) => t.status === 'doing').length;
+  const todo = tasks.filter((t) => t.status === 'todo').length;
+  const overdue = tasks.filter((t) => t.warning === '已逾期').length;
+  $('boardStats').innerHTML = [
+    `总任务: ${total}`,
+    `待办: ${todo}`,
+    `进行中: ${doing}`,
+    `已完成: ${done}`,
+    `已逾期: ${overdue}`
+  ].map((s) => `<span class='chip'>${s}</span>`).join('');
+}
+
 function renderTasks() {
   const q = $('searchInput').value.trim().toLowerCase();
-  ['todo', 'doing', 'done'].forEach((s) => ($(s).innerHTML = ''));
-  allTasks
+  const columns = { todo: [], doing: [], done: [] };
+  const filtered = allTasks
     .filter((t) => !q || t.title.toLowerCase().includes(q) || (t.category || '').toLowerCase().includes(q))
-    .forEach((t) => ($(t.status).innerHTML += taskCard(t)));
+  filtered.forEach((t) => {
+    const key = columns[t.status] ? t.status : 'todo';
+    columns[key].push(taskCard(t));
+  });
+  Object.entries(columns).forEach(([status, cards]) => {
+    $(status).innerHTML = cards.length ? cards.join('') : "<div class='empty'>暂无任务</div>";
+  });
+  renderBoardStats(filtered);
 }
 
 async function loadTasks() {
