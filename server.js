@@ -15,6 +15,8 @@ app.use(express.json({ limit: '10mb' }));
 app.use(express.static(path.join(__dirname, 'public')));
 
 function ensureDb() {
+  const dir = path.dirname(DB_FILE);
+  if (!fs.existsSync(dir)) fs.mkdirSync(dir, { recursive: true });
   if (!fs.existsSync(DB_FILE)) {
     fs.writeFileSync(DB_FILE, JSON.stringify({ users: [{ id: 'u1', username: 'admin', password: 'admin123', role: 'admin' }], tasks: [], sessions: {} }, null, 2), 'utf8');
   }
@@ -55,6 +57,7 @@ function getTransporter() {
 app.post('/api/register', (req, res) => {
   const { username, password } = req.body;
   if (!username || !password) return res.status(400).json({ message: '用户名密码必填' });
+  if (String(username).trim().length < 3 || String(password).length < 6) return res.status(400).json({ message: '用户名至少3位，密码至少6位' });
   const db = readDb();
   if (db.users.some((u) => u.username === username)) return res.status(400).json({ message: '用户已存在' });
   const user = { id: Date.now().toString(), username, password, role: 'user' };
@@ -87,7 +90,7 @@ app.get('/api/tasks', auth, (req, res) => {
 
 app.post('/api/tasks', auth, (req, res) => {
   const { title, category, priority, dueDate, notes } = req.body;
-  if (!title) return res.status(400).json({ message: '任务标题必填' });
+  if (!title || String(title).trim().length < 2) return res.status(400).json({ message: '任务标题至少2个字符' });
   const task = { id: Date.now().toString(), userId: req.user.id, title, category: category || '未分类', priority: priority || 'medium', dueDate: dueDate || '', notes: notes || '', ownerEmail: req.body.ownerEmail || '', status: 'todo', lastReminderAt: '', createdAt: new Date().toISOString() };
   req.db.tasks.push(task); writeDb(req.db); res.status(201).json(task);
 });
