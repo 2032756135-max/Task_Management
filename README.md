@@ -48,21 +48,70 @@ npm start
 npm test
 ```
 
-## 可选：邮件提醒配置
+## 可选：邮件提醒配置（SMTP）
 
-发送提醒邮件前，需要配置以下环境变量：
+如需使用邮件提醒功能，需要配置 SMTP 服务。
 
-- `SMTP_HOST`
-- `SMTP_PORT`
-- `SMTP_USER`
-- `SMTP_PASS`
+### 方式一：使用 .env 文件（推荐）
 
-示例（Linux/macOS）：
+1. 复制环境变量配置模板：
 
 ```bash
-export SMTP_HOST=smtp.example.com
-export SMTP_PORT=465
-export SMTP_USER=bot@example.com
-export SMTP_PASS=your_password
+cp .env.example .env
+```
+
+2. 编辑 `.env` 文件，填入你的 SMTP 信息：
+
+```env
+SMTP_HOST=smtp.gmail.com
+SMTP_PORT=587
+SMTP_USER=your-email@gmail.com
+SMTP_PASS=your-app-password
+```
+
+3. 启动服务：
+
+```bash
 npm start
 ```
+
+### 常见邮箱服务商配置
+
+| 服务商 | SMTP 地址 | 端口 | 安全方式 |
+|--------|---------|------|--------|
+| Gmail | smtp.gmail.com | 587 | TLS |
+| QQ 邮箱 | smtp.qq.com | 465 | SSL |
+| 163 邮箱 | smtp.163.com | 465 | SSL |
+| 阿里邮箱 | smtp.aliyun.com | 465 | SSL |
+| Outlook | smtp-mail.outlook.com | 587 | TLS |
+
+### Gmail 配置步骤
+
+1. 启用两步验证：https://myaccount.google.com/security/
+2. 生成应用专用密码：https://myaccount.google.com/apppasswords
+3. 将应用专用密码填入 `.env` 的 `SMTP_PASS` 字段
+
+### 测试邮件提醒
+
+1. 创建一个新任务，设置 `ownerEmail` 字段
+2. 调用邮件提醒 API：`POST /api/send-reminder/:taskId`
+
+如未配置 SMTP，调用提醒 API 会返回错误信息。
+
+### 🔧 SMTP 配置故障排查
+
+如遇到配置问题，参考 [SMTP_CONFIG.md](SMTP_CONFIG.md) 获得详细的故障排查指南。
+
+运行测试脚本快速诊断 SMTP 配置：
+
+```bash
+node test-smtp.js
+```
+
+常见错误及解决方案：
+
+| 错误 | 原因 | 解决方案 |
+|------|------|--------|
+| `535 Login fail` | 授权码不正确或SMTP未启用 | 重新生成授权码，确认SMTP已启用 |
+| `535 Account is abnormal` | 账户异常或登录频率限制 | 等待5-10分钟后重试 |
+| `ENOTFOUND smtp.xx.com` | 域名解析失败或网络问题 | 检查网络连接，确认SMTP地址正确 |
