@@ -1,0 +1,73 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>工作任务管理平台</title>
+  <link rel="stylesheet" href="styles.css" />
+</head>
+<body>
+  <div class="bg"></div>
+  <header class="topbar">
+    <div>
+      <h1>工作任务管理平台</h1>
+      <p>看板管理 · 周报统计 · 邮件提醒 · Excel 导入导出</p>
+    </div>
+    <div id="authBar"></div>
+  </header>
+
+  <main>
+    <section class="panel" id="loginCard">
+      <h2>欢迎登录</h2>
+      <p class="sub">默认管理员：admin / admin123</p>
+      <div class="grid2">
+        <input id="username" placeholder="用户名" />
+        <input id="password" type="password" placeholder="密码" />
+      </div>
+      <div class="actions">
+        <button class="primary" onclick="login()">登录</button>
+        <button onclick="register()">注册</button>
+      </div>
+      <div id="authMsg" class="msg"></div>
+    </section>
+
+    <section class="panel hidden" id="taskCard">
+      <h2>新增任务</h2>
+      <form id="taskForm" class="grid3">
+        <input name="title" placeholder="任务标题" required />
+        <input name="category" placeholder="分类（项目/客户/流程）" />
+        <select name="priority"><option value="high">高</option><option value="medium" selected>中</option><option value="low">低</option></select>
+        <input name="dueDate" type="date" />
+        <input name="ownerEmail" type="email" placeholder="提醒邮箱" />
+        <input name="notes" placeholder="备注" />
+        <button class="primary" type="submit">保存任务</button>
+      </form>
+    </section>
+
+    <section class="panel hidden" id="toolsCard">
+      <h2>工具与筛选</h2>
+      <div class="grid3">
+        <input id="keyword" placeholder="搜索标题/备注" />
+        <button onclick="loadReport()">刷新周报</button>
+        <button onclick="exportExcel()">导出 Excel</button>
+      </div>
+      <div class="actions">
+        <input type="file" id="fileInput" accept=".xlsx,.xls" />
+        <button onclick="importExcel()">导入 Excel</button>
+      </div>
+      <pre id="report" class="report">点击“刷新周报”查看统计</pre>
+    </section>
+
+    <section class="panel hidden" id="boardCard">
+      <h2>看板（拖拽切换状态）</h2>
+      <div class="kanban">
+        <div class="col"><h3>待办</h3><div class="list" id="todo"></div></div>
+        <div class="col"><h3>进行中</h3><div class="list" id="doing"></div></div>
+        <div class="col"><h3>已完成</h3><div class="list" id="done"></div></div>
+      </div>
+    </section>
+  </main>
+
+  <script src="app.js"></script>
+</body>
+</html>
