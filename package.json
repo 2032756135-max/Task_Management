@@ -8,8 +8,8 @@
   },
   "dependencies": {
     "cors": "^2.8.5",
-    "dotenv": "^16.4.1",
-    "express": "^4.19.2",
+    "dotenv": "^17.4.2",
+    "express": "^5.2.1",
     "nodemailer": "^8.0.7",
     "xlsx": "^0.18.5"
   }
